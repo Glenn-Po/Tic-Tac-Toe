@@ -53,8 +53,6 @@ void displayAuthorInfo();
 
 void writePlayerIcon(int , char);
 
-void getGameInfo();//chooseChar();
-//choosw intelligence or random, char
 
 void drawBoard();
 
@@ -74,7 +72,7 @@ int getPlayerChoice(vector< vector<int> >&, const char);
 
 int getComputerPlayPos(vector<vector<int> >& board);
 
-bool displayGameEndOrContinue(int winner, int opponent);
+bool displayGameEndOrContinue(int winner, int gameMode);
 
 int getBestMove(const vector< vector<int> >& states);
 
@@ -104,7 +102,7 @@ main(){
 		{0,  0,  0}
 	};*/
 	
-	//showWelcomeScreen();
+	showWelcomeScreen();
 	clear_screen();
 	
 	vector< vector<int> >  board;
@@ -115,17 +113,17 @@ main(){
 	
 	while(true)
 	{
-		//resetBoard(board);
-		//instructionManual();
-		//clear_screen();
-		int opponent = chooseGameMode();
+		resetBoard(board);
+		instructionManual();
+		clear_screen();
+		int gameMode = chooseGameMode();
 		clear_screen();
 		drawBoard();
 		writePositions();
-		int winner = runGame(board, opponent);
+		int winner = runGame(board, gameMode);
 		Sleep(2000);
     	clear_screen();
-		if(displayGameEndOrContinue(winner, opponent))
+		if(displayGameEndOrContinue(winner, gameMode))
 			continue;
 		else
 			break;
@@ -135,7 +133,7 @@ main(){
 
 
 //function to display status eg, input error
-int runGame(vector<vector<int> >& board, int opponent){
+int runGame(vector<vector<int> >& board, int gameMode){
 
 	bool gameOn = true;
 	int winner = 0 , chosenPosition;
@@ -146,7 +144,7 @@ int runGame(vector<vector<int> >& board, int opponent){
 	
 	char nextPlayer = PLAYER_ONE;
 	
-	if(opponent==TWO_PLAYER)
+	if(gameMode==TWO_PLAYER)
 		displayStatus(string("Icons for Players| ONE=[") + PLAYER_ONE + "] TWO=["+PLAYER_TWO+"]", 1, 50);
 	else
 		displayStatus(string("Your icon is: [")+PLAYER_ONE+"]", 1, 50);
@@ -176,15 +174,15 @@ int runGame(vector<vector<int> >& board, int opponent){
 		}
 		else if(nextPlayer == PLAYER_TWO)
 		{
-			if(opponent==TWO_PLAYER)
+			if(gameMode==TWO_PLAYER)
 				chosenPosition = getPlayerChoice(board, nextPlayer);
 			else
-				chosenPosition = opponent==INTELLIGENT_COMPUTER ? getBestMove(board) : getComputerPlayPos(board);
+				chosenPosition = gameMode==INTELLIGENT_COMPUTER ? getBestMove(board) : getComputerPlayPos(board);
 			
 			updateBoard(board, chosenPosition, -1);
 			Sleep(1500);//sleeo to slow down the game (computer reaction)
 			writePlayerIcon(chosenPosition, nextPlayer);
-			if(opponent!=TWO_PLAYER)
+			if(gameMode!=TWO_PLAYER)
 				Sleep(800);//sleeo to slow down the game and make it fun
             nextPlayer = PLAYER_ONE;
             std::ostringstream status ;
@@ -252,8 +250,7 @@ void showWelcomeScreen(){
 	"WELCOME TO A GAME OF TIC TAC TOE \n\n\n"
 	"\tDEVELOPED BY: @Glenn-Po,\n\n\n"
 	"\tThis is a small, simple CONSOLE-BASED game.\n\n"
- 	"\t\tENSURE to run under DOS on a PC\n\n\n"
-	"\tDisfruta el juego, Amigo";
+ 	"\t\tHave fun \3\n\n\n";
 	
 	for(int i = 0; msg[i] != '\0' ;){
         TEXTCOLOR(SHINYWHITE);
@@ -336,7 +333,7 @@ int chooseGameMode(){
 						////so '\r' is read first before '\n'
 
 					case '\r':
-					case '\n'://for fun maybe , who knows?
+					case '\n':
 					   	Sleep(1000);//1 secon wait and continue
 					   	fflush(stdin);
 					//	GOTOXY(2, 24),cout<<"\t\tPress <ENTER> to continue";
@@ -650,7 +647,7 @@ int spotter(int i  , int j){
 // and with respective emojis
 
 //message smaal: "you", big:"msg; lose, win, tie"  + for win, - for lose | for draw
-bool displayGameEndOrContinue(int winner, int opponent){
+bool displayGameEndOrContinue(int winner, int gameMode){
 
 	string message;
 	switch(winner)
@@ -660,12 +657,12 @@ bool displayGameEndOrContinue(int winner, int opponent){
 			break;
 		case 1:
 			message = "Player O WINs";
-			if(opponent != TWO_PLAYER)
+			if(gameMode != TWO_PLAYER)
 				message = "You [O] Win";
 			break;
 		case -1:
 			message = "Player X WINs";
-			if(opponent != TWO_PLAYER)
+			if(gameMode != TWO_PLAYER)
 				message = "Computer [X] Wins";
 	}
 	
