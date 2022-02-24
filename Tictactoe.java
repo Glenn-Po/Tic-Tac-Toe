@@ -4,8 +4,10 @@ import java.io.InputStreamReader;
 import java.lang.*;
 //import java.util.Scanner;
 
-//TOD
+//TODO
 //check how to resolve position to board cell
+
+//#[Two player] mode only
 class Tictactoe{
     String[] template;
     char[][] board;
