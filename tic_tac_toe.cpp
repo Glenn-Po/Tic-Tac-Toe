@@ -4,8 +4,9 @@
 //--reimplement tie checker
 //--implement spectacular endgame display
 
-#include "..\\..\\MACROS.h"
+#include "MACROS.h"
 #include <iostream>
+#include <sstream>
 #include <conio.h>
 #include <cstdio>
 #include <cctype>
@@ -20,6 +21,12 @@
 #define INFINITY (2<<8)
 #define MIN_SCORE -(2<<3)
 #define MAX_SCORE -MIN_SCORE
+
+//[]Oponents
+
+#define RANDOM 2<<1
+#define INTELLIGENT_COMPUTER  2<<2
+#define TWO_PLAYER  2<<3
 
 using std::cout;
 using std::cin;
@@ -55,7 +62,7 @@ void updateBoard(vector< vector<int> >&  v, int position, int player);
 
 void resetBoard(vector< vector<int> >& );
 
-int runGame(vector< vector<int> >&);//main game funtion
+int runGame(vector< vector<int> >&, int);//main game funtion
 
 void displayStatus(string msg, int type = 1 , int waitTime = 20);
 
@@ -63,11 +70,15 @@ void writePositions();
 
 int getPosition(vector< vector<int> >&);
 
+int getPlayerChoice(vector< vector<int> >&, const char);
+
 int getComputerPlayPos(vector<vector<int> >& board);
 
-bool displayGameEndOrContinue(int winner);
+bool displayGameEndOrContinue(int winner, int opponent);
 
 int getBestMove(const vector< vector<int> >& states);
+
+int chooseGameMode();
 
 
 /****************************************************************************
@@ -93,7 +104,7 @@ main(){
 		{0,  0,  0}
 	};*/
 	
-	showWelcomeScreen();
+	//showWelcomeScreen();
 	clear_screen();
 	
 	vector< vector<int> >  board;
@@ -104,15 +115,17 @@ main(){
 	
 	while(true)
 	{
-		resetBoard(board);
-		instructionManual();
+		//resetBoard(board);
+		//instructionManual();
+		//clear_screen();
+		int opponent = chooseGameMode();
 		clear_screen();
 		drawBoard();
 		writePositions();
-		int winner = runGame(board);
+		int winner = runGame(board, opponent);
 		Sleep(2000);
     	clear_screen();
-		if(displayGameEndOrContinue(winner))
+		if(displayGameEndOrContinue(winner, opponent))
 			continue;
 		else
 			break;
@@ -122,24 +135,26 @@ main(){
 
 
 //function to display status eg, input error
-int runGame(vector<vector<int> >& board){
+int runGame(vector<vector<int> >& board, int opponent){
 
 	bool gameOn = true;
 	int winner = 0 , chosenPosition;
 	
 	//0 for tie, 1 for player -1 for computer
-	
-	const char HUMAN = 'O' , COMPUTER = 'X'; //case of human and computer
-	
+		
 	const char PLAYER_ONE = 'O', PLAYER_TWO = 'X'; //case of human and computer
 	
-	char nextPlayer = HUMAN;//for user
+	char nextPlayer = PLAYER_ONE;
 	
-	displayStatus(string("Game is loading Up ")+string(10, '\xF9'), 1, 50);
-	Sleep(500);
-	displayStatus(string("The Game is On, You Are UP"), 1, 50);
-	Sleep(500);
+	if(opponent==TWO_PLAYER)
+		displayStatus(string("Icons for Players| ONE=[") + PLAYER_ONE + "] TWO=["+PLAYER_TWO+"]", 1, 50);
+	else
+		displayStatus(string("Your icon is: [")+PLAYER_ONE+"]", 1, 50);
+
 	
+	displayStatus(string("Game is loading Up ")+string(10, '\xF9'), 1, 40);
+	Sleep(500);
+
 	while(gameOn)
 	{
 		winner = checkForWinner(board);
@@ -149,23 +164,32 @@ int runGame(vector<vector<int> >& board){
 			continue;
 			//interestingly this two statements combine to from a break;
 		}
-		if(nextPlayer == HUMAN)
+		if(nextPlayer == PLAYER_ONE)
 		{
-			chosenPosition = getPosition(board);
+			chosenPosition = getPlayerChoice(board, nextPlayer);
 			updateBoard(board, chosenPosition, 1);
 			writePlayerIcon(chosenPosition, nextPlayer);
-            nextPlayer = COMPUTER;
+            nextPlayer = PLAYER_TWO;
+        	std::ostringstream status ;
+            status << "[" << nextPlayer << "] Play";
+            displayStatus(status.str());
 		}
-		else if(nextPlayer == COMPUTER)
+		else if(nextPlayer == PLAYER_TWO)
 		{
-			chosenPosition = getBestMove(board);
-			//getComputerPlayPos(board);
+			if(opponent==TWO_PLAYER)
+				chosenPosition = getPlayerChoice(board, nextPlayer);
+			else
+				chosenPosition = opponent==INTELLIGENT_COMPUTER ? getBestMove(board) : getComputerPlayPos(board);
+			
 			updateBoard(board, chosenPosition, -1);
 			Sleep(1500);//sleeo to slow down the game (computer reaction)
 			writePlayerIcon(chosenPosition, nextPlayer);
-			Sleep(800);//sleeo to slow down the game and make it fun
-			displayStatus(string("Computer Plays, You are Up Next:)"));
-            nextPlayer = HUMAN;
+			if(opponent!=TWO_PLAYER)
+				Sleep(800);//sleeo to slow down the game and make it fun
+            nextPlayer = PLAYER_ONE;
+            std::ostringstream status ;
+            status << "[" << nextPlayer << "] Play";
+            displayStatus(status.str());
 		}
 		
 	}
@@ -245,6 +269,91 @@ void showWelcomeScreen(){
 	TEXTCOLOR(DEFAULT);
 	cout << "\n\n\n\n\t\tHit Any Key To Continue . . .";
 	getch();
+}
+
+
+int chooseGameMode(){
+	
+	
+    int position_y[] = {5+1, 7+1,9+1};
+    TEXTCOLOR(SHINYWHITE);
+	cout<<"\n\n\n\t\tChoose your opponent: \n\n\n";
+    TEXTCOLOR(VIOLET);
+	cout << "\t\t Another HUMAN        \xF0\n\n";
+	cout << "\t\t Random COMPUTER      \xE0\n\n";
+	cout << "\t\t Intelligent COMPUTER \x5\n\n";
+	
+    string items[]={
+    	" Another HUMAN        \xF0",
+		" Random COMPUTER      \xE0",
+		" Intelligent COMPUTER \5"
+    };
+    
+    int choices[]={
+    	TWO_PLAYER,
+		RANDOM,
+		INTELLIGENT_COMPUTER
+	};
+    
+    TEXTCOLOR(OLIVE);
+	GOTOXY(50, 5), cout <<"PRESS ";
+	GOTOXY(50, 7), cout<<  "  -The <\x1E> and <\x1F> arrow keys";
+	GOTOXY(50, 9), cout<<  " 	 or <W> and <S> to MOVE   ";
+	GOTOXY(50, 11), cout<<  "  -[ENTER]/[RETURN] to CHOOSE ";
+	int ch,cur_pos = 0, former_pos =0;
+	//first blitting
+	BTEXTCOLOR(VIOLET, WHITE);
+	GOTOXY(8, position_y[cur_pos%8]), cout << "\t" << items[cur_pos%3];// '\xDB';
+	TEXTCOLOR(LIGHTAQUA);
+	GOTOXY(40, 3), cout << "["<<std::left << items[cur_pos%3] << "]";
+	TEXTCOLOR(DEFAULT);
+
+	while(true){
+		if(kbhit()){//key press detected?
+			ch = getch();
+			if(not ch){//arrow key or function key was pressed?
+				ungetch(ch);
+				ch = getch();
+			}
+				switch(ch){
+					case 119://'w'
+					case 57:// 'W'
+					case 72:// up arrow key
+						former_pos =cur_pos;//reset
+						cur_pos==0?cur_pos=2:cur_pos--; //new position
+							//trying to avoid negative array indices
+						break;
+					case 115: //'s'
+					case 53:// 'S'
+					case 80:// dowm arrow key
+						former_pos = cur_pos;//reset
+						cur_pos++;//new position
+						break;
+					//current highlighted choice was chosen
+					//don't know which character code will be caught because
+					//windows return = '\r\n';
+						//windows return ='\r\n'
+						////so '\r' is read first before '\n'
+
+					case '\r':
+					case '\n'://for fun maybe , who knows?
+					   	Sleep(1000);//1 secon wait and continue
+					   	fflush(stdin);
+					//	GOTOXY(2, 24),cout<<"\t\tPress <ENTER> to continue";
+						//getch();
+					    return (choices[cur_pos%3]);
+				}
+				//if data changed , then blit
+    			TEXTCOLOR(VIOLET);
+				GOTOXY(8, position_y[former_pos%3]), cout << "\t" << items[former_pos%3];
+				BTEXTCOLOR(VIOLET, WHITE);
+				GOTOXY(8, position_y[cur_pos%3]), cout << "\t" << items[cur_pos%3];// '\xDB';
+				TEXTCOLOR(LIGHTAQUA);
+				GOTOXY(40, 3), cout << "[" <<std::left << items[cur_pos%3] <<"]";
+				TEXTCOLOR(DEFAULT);
+
+     		}
+		}
 }
 
 
@@ -427,6 +536,64 @@ int getPosition(vector< vector<int> >& states){
 	return pos-'0';
 }
 
+
+//[] for two player game
+//this has to make sure that the position has not been chosen alreay
+int getPlayerChoice(vector< vector<int> >& states, const char player){
+
+	char BACKSPACE = '\b', RETURN = '\r'; 
+	
+	bool posGotten = false, readyToSubmit = false,
+	    consoleIsCurrentlyDisplayingNum = false;
+	    
+	char pos = 0;
+	
+	TEXTCOLOR(GREEN);
+	GOTOXY(40, 7), cout << "Your Turn : " << player;
+	GOTOXY(40, 9), cout << "Enter a position to play: [   ]";
+	GOTOXY(40+28, 9);
+	TEXTCOLOR(LIGHTAQUA);
+	
+	while(not posGotten or not readyToSubmit)
+	{
+		if(kbhit())
+		{
+			char ch = getch();
+			
+			if(std::isdigit(ch) and not posGotten and ch != '0'
+					and not consoleIsCurrentlyDisplayingNum)
+			{
+                cout << ch;
+				pos = ch;
+				consoleIsCurrentlyDisplayingNum = true;
+				posGotten = true;
+			}
+			else if(ch == BACKSPACE and consoleIsCurrentlyDisplayingNum)
+			{
+				consoleIsCurrentlyDisplayingNum = false;
+                posGotten = false;
+                cout << BACKSPACE << " " << BACKSPACE;
+			}
+			else if(ch == RETURN and posGotten)
+			{
+			    readyToSubmit = true;
+			    if(canPlayAtThisPos(states, pos-'0'))
+				;
+				else
+				{
+					displayStatus(string("This Position is unavailable"), -1, 40);
+				    readyToSubmit = posGotten = false;
+				    GOTOXY(40+29, 9);
+					TEXTCOLOR(LIGHTAQUA);
+				}
+			}
+		} //end if(kbhit())
+	}
+	
+	GOTOXY(40, 7), cout << string(5, '\t');
+	return pos-'0';
+}
+
 void displayStatus(string msg, int type , int waitTime){
 
 	//1 for normal - green
@@ -483,57 +650,34 @@ int spotter(int i  , int j){
 // and with respective emojis
 
 //message smaal: "you", big:"msg; lose, win, tie"  + for win, - for lose | for draw
-bool displayGameEndOrContinue(int winner){
+bool displayGameEndOrContinue(int winner, int opponent){
 
 	string message;
 	switch(winner)
 	{
 		case 0:
-			message = 
-			"00000  000  00 0000  0   0 00000 0000 0000   \n"
-			"0     0   0 00 0   0 0   0   0   0    0   0  \n"
-			"0 000 00000 00 0 00  0   0   0   0000 0000   \n"
-			"0   0 0   0 00 0     0   0   0   0    0   0  \n"
-			"00000 0   0 00   0 0     00000   0   0000 0    0 \n";
+			message = "Game is a TIE";
 			break;
 		case 1:
-			message = 
-			"0   0 0   0 0   0  000  0   0 \n"
-			"0   0 0   0 00 00 0   0 00  0 \n"
-			"0 0 0 0   0 0 0 0 00000 0 0 0 \n"
-			"0   0 0   0 0   0 0   0 0  00 \n"
-			"0   0 00000 0   0 0   0 0   0 \n";
+			message = "Player O WINs";
+			if(opponent != TWO_PLAYER)
+				message = "You [O] Win";
 			break;
 		case -1:
-			message = 
-			"00000 00000 0   0 0000  0   0 00000 0000 0000   \n"
-			"0     0   0 00 00 0   0 0   0   0   0    0   0  \n"
-			"0     0   0 0 0 0 0 00  0   0   0   0000 0000   \n"
-			"0     0   0 0   0 0     0   0   0   0    0   0  \n"
-			"00000 00000 0   0 0     00000   0   0000 0    0 \n";
-			break;
-			break;
-
+			message = "Player X WINs";
+			if(opponent != TWO_PLAYER)
+				message = "Computer [X] Wins";
 	}
 	
 	//annimate the message
-	int color = 1, nCnt = 0;
-	const int NUMBER_OF_TIMES_TO_MARQUEE = message.length();
-	while(nCnt < NUMBER_OF_TIMES_TO_MARQUEE)
-	{
-		TEXTCOLOR(color);
-		GOTOXY(14, 10), std::cout << message;// write out first
-	    char hold = message[0];
-	    message.erase(0,1);
-	    message += hold;
-	    Sleep(75);
-		color = color == 15 ? 1: color + 1;//first 15 colors are 'background-less'
-		nCnt++;
-	}
 	clear_screen();
-	Sleep(500);
-	
-	
+	BTEXTCOLOR(SHINYGREEN, SHINYWHITE);
+	GOTOXY(30, 6), cout << "\333\333\333\333\333\333\333\333\333\333\333\333\333\333\333\333";
+	GOTOXY(30, 7), cout << "    " << message << "    ";
+	GOTOXY(30, 8), cout << "\333\333\333\333\333\333\333\333\333\333\333\333\333\333\333\333";
+	getch();
+	getch();
+	clear_screen();
 	//prompt to play again
 	
 	char doYouWantToPlayAgain = 'n';
@@ -543,13 +687,13 @@ bool displayGameEndOrContinue(int winner){
 
 	//implement this here
 	
-/*	while( (doYouWantToPlayAgain = getch()) and
+	while( (doYouWantToPlayAgain = getch()) and
 			(tolower(doYouWantToPlayAgain) !='n' and
 			tolower(doYouWantToPlayAgain) != 'y'));
-			
+	
 			cout << doYouWantToPlayAgain
-			;*/
-    doYouWantToPlayAgain = getche();
+			;
+    //doYouWantToPlayAgain = getche();
     
 	switch(doYouWantToPlayAgain)
 	{
@@ -561,7 +705,7 @@ bool displayGameEndOrContinue(int winner){
 		case 'N':
 			clear_screen();
 			TEXTCOLOR(SHINYGREEN);
-			GOTOXY(14, 10), cout << "GOOD BYE | Hasta la vista \2\2\n\n See You Next Time!!!!";
+			GOTOXY(14, 10), cout << "GOOD BYE | \2\2\n\n See You Next Time!!!!";
 			Sleep(1000);
 			TEXTCOLOR(DEFAULT);
 			cout << "\n\n\n\n\t\t"
